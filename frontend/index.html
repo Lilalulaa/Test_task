@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд: Дебиторская задолженность</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+</head>
+<body>
+
+    <!-- ============================================ -->
+    <!-- ШАПКА ДАШБОРДА                              -->
+    <!-- ============================================ -->
+    <header class="app-header">
+        <div class="app-header__brand">
+            <h1 class="app-header__title">📊 Дебиторская задолженность</h1>
+            <span class="app-header__badge">Срез: 08.07.2026</span>
+        </div>
+        <button class="app-header__refresh" onclick="refreshData()">
+            🔄 Обновить
+        </button>
+    </header>
+
+    <!-- ============================================ -->
+    <!-- KPI КАРТОЧКИ                                -->
+    <!-- ============================================ -->
+    <section class="kpi-grid">
+        <article class="kpi-card">
+            <div class="kpi-card__icon">💰</div>
+            <div class="kpi-card__content">
+                <span class="kpi-card__label">Общая ДЗ</span>
+                <span class="kpi-card__value" id="totalDebt">—</span>
+                <span class="kpi-card__delta" id="totalDebtDelta">—</span>
+            </div>
+        </article>
+
+        <article class="kpi-card">
+            <div class="kpi-card__icon">⚠️</div>
+            <div class="kpi-card__content">
+                <span class="kpi-card__label">Просроченная</span>
+                <span class="kpi-card__value" id="overdue">—</span>
+                <span class="kpi-card__delta kpi-card__delta--danger" id="overdueDelta">—</span>
+            </div>
+        </article>
+
+        <article class="kpi-card">
+            <div class="kpi-card__icon">📅</div>
+            <div class="kpi-card__content">
+                <span class="kpi-card__label">В подходе (1–5 дн)</span>
+                <span class="kpi-card__value" id="inApproach">—</span>
+                <span class="kpi-card__delta" id="inApproachDelta">—</span>
+            </div>
+        </article>
+
+        <article class="kpi-card">
+            <div class="kpi-card__icon">🔮</div>
+            <div class="kpi-card__content">
+                <span class="kpi-card__label">Прогноз на неделю</span>
+                <span class="kpi-card__value" id="forecast">—</span>
+                <span class="kpi-card__delta" id="forecastDelta">—</span>
+            </div>
+        </article>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- ВКЛАДКИ (ТАБЫ)                              -->
+    <!-- ============================================ -->
+    <nav class="tabs-nav">
+        <button class="tab-btn active" data-tab="tab-overview">📈 Обзор</button>
+        <button class="tab-btn" data-tab="tab-dynamics">📊 Динамика по отделам</button>
+        <button class="tab-btn" data-tab="tab-details">📋 Детализация и Топы</button>
+    </nav>
+
+    <!-- ============================================ -->
+    <!-- ВКЛАДКА 1: ОБЗОР                            -->
+    <!-- ============================================ -->
+    <div id="tab-overview" class="tab-content active">
+
+        <!-- Графики -->
+        <section class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <h3 class="chart-card__title">Динамика общей и просроченной ДЗ</h3>
+                    <span class="chart-card__subtitle">по дням</span>
+                </div>
+                <div class="chart-card__body">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <h3 class="chart-card__title">Сравнение отделов</h3>
+                    <span class="chart-card__subtitle">на последнюю дату</span>
+                </div>
+                <div class="chart-card__body">
+                    <canvas id="departmentsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ВКЛАДКА 2: ДИНАМИКА ПО ОТДЕЛАМ             -->
+    <!-- ============================================ -->
+    <div id="tab-dynamics" class="tab-content">
+
+        <section class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <h3 class="chart-card__title">Динамика общей ДЗ по отделам</h3>
+                    <span class="chart-card__subtitle">по дням</span>
+                </div>
+                <div class="chart-card__body">
+                    <canvas id="deptTotalTrendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <h3 class="chart-card__title">Динамика просроченной ДЗ по отделам</h3>
+                    <span class="chart-card__subtitle">по дням</span>
+                </div>
+                <div class="chart-card__body">
+                    <canvas id="deptOverdueTrendChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ВКЛАДКА 3: ДЕТАЛИЗАЦИЯ И ТОПЫ              -->
+    <!-- ============================================ -->
+    <div id="tab-details" class="tab-content">
+
+        <!-- Таблица: Детализация по отделам -->
+        <section class="table-section">
+            <div class="table-section__header">
+                <h3 class="table-section__title">📋 Детализация по отделам</h3>
+                <span class="table-section__subtitle">все отделы</span>
+            </div>
+            <div class="table-section__wrapper">
+                <table class="data-table" id="departmentsTable">
+                    <thead>
+                        <tr>
+                            <th>Отдел</th>
+                            <th class="data-table__col--numeric">Общая ДЗ</th>
+                            <th class="data-table__col--numeric">Просроченная</th>
+                            <th class="data-table__col--numeric">% просрочки</th>
+                            <th class="data-table__col--numeric">В подходе</th>
+                            <th class="data-table__col--numeric">Прогноз</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody id="departmentsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Топ-15 по сумме просрочки -->
+        <section class="table-section">
+            <div class="table-section__header">
+                <h3 class="table-section__title">🏆 Топ-15 по сумме просрочки</h3>
+            </div>
+            <div class="table-section__wrapper">
+                <table class="data-table" id="topOverdueTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Контрагент</th>
+                            <th>Отдел</th>
+                            <th class="data-table__col--numeric">Сумма</th>
+                            <th class="data-table__col--numeric">Дней</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topOverdueTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Топ-15 по дням просрочки -->
+        <section class="table-section">
+            <div class="table-section__header">
+                <h3 class="table-section__title">🏆 Топ-15 по дням просрочки</h3>
+            </div>
+            <div class="table-section__wrapper">
+                <table class="data-table" id="topDaysTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Контрагент</th>
+                            <th>Отдел</th>
+                            <th class="data-table__col--numeric">Дней</th>
+                            <th class="data-table__col--numeric">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topDaysTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ПОДКЛЮЧАЕМ СКРИПТЫ                          -->
+    <!-- ============================================ -->
+    <script src="script.js"></script>
+</body>
+</html>
